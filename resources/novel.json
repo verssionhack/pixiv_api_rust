@@ -1,0 +1,71 @@
+{
+    "novel": {
+        "id": 12035664,
+        "title": "こういうの霊視っていうんですか？7",
+        "caption": "書かせていただきました！！すっごい提造です！！すっごいです！今回はすごい沢山の提造があります！お気を付けてください！！<br /><br />コメント、ブクマ、スタンプ、いいねありがとうございます！！<br />何かありましたらツイッターの方にご連絡ください。",
+        "restrict": 0,
+        "x_restrict": 0,
+        "is_original": false,
+        "image_urls": {
+            "square_medium": "https://s.pximg.net/common/images/novel_thumb/novel_thumb_10_128x128.jpg",
+            "medium": "https://s.pximg.net/common/images/novel_thumb/novel_thumb_10_176mw.jpg",
+            "large": "https://s.pximg.net/common/images/novel_thumb/novel_thumb_10_240mw.jpg"
+        },
+        "create_date": "2019-12-04T06:28:10+09:00",
+        "tags": [
+            {
+                "name": "鬼滅の夢",
+                "translated_name": null,
+                "added_by_uploaded_user": true
+            },
+            {
+                "name": "オリ主",
+                "translated_name": null,
+                "added_by_uploaded_user": true
+            },
+            {
+                "name": "女主",
+                "translated_name": null,
+                "added_by_uploaded_user": true
+            },
+            {
+                "name": "煉獄杏寿郎",
+                "translated_name": "Kyojuro Rengoku",
+                "added_by_uploaded_user": true
+            },
+            {
+                "name": "続きを正座待機",
+                "translated_name": null,
+                "added_by_uploaded_user": false
+            },
+            {
+                "name": "鬼滅の夢小説3000users入り",
+                "translated_name": null,
+                "added_by_uploaded_user": false
+            }
+        ],
+        "page_count": 4,
+        "text_length": 18401,
+        "user": {
+            "id": 17572202,
+            "name": "アジサイ。",
+            "account": "kani0522",
+            "profile_image_urls": {
+                "medium": "https://i.pximg.net/user-profile/img/2019/10/24/20/09/36/16456615_b78d26e880a843d108d9d4686a8c245a_170.png"
+            },
+            "is_followed": false
+        },
+        "series": {
+            "id": 1189914,
+            "title": "もしかして、見えてますか？"
+        },
+        "is_bookmarked": false,
+        "total_bookmarks": 3541,
+        "total_view": 17321,
+        "visible": true,
+        "total_comments": 62,
+        "is_muted": false,
+        "is_mypixiv_only": false,
+        "is_x_restricted": false
+    }
+}

@@ -1,0 +1,61 @@
+{
+    "user": {
+        "id": 24970193,
+        "name": "らいふにゃん",
+        "account": "catlife72",
+        "profile_image_urls": {
+            "medium": "https://i.pximg.net/user-profile/img/2018/03/07/09/27/26/13921030_7647eca15abe5f463dfdb820851456c9_170.jpg"
+        },
+        "comment": "お絵かきするひと～♪♫",
+        "is_followed": true
+    },
+    "profile": {
+        "webpage": null,
+        "gender": "",
+        "birth": "",
+        "birth_day": "10-25",
+        "birth_year": 0,
+        "region": "",
+        "address_id": 0,
+        "country_code": "",
+        "job": "",
+        "job_id": 0,
+        "total_follow_users": 21,
+        "total_mypixiv_users": 0,
+        "total_illusts": 27,
+        "total_manga": 0,
+        "total_novels": 1,
+        "total_illust_bookmarks_public": 366,
+        "total_illust_series": 0,
+        "total_novel_series": 0,
+        "background_image_url": null,
+        "twitter_account": "life_neko72",
+        "twitter_url": "https://twitter.com/life_neko72",
+        "pawoo_url": null,
+        "is_premium": false,
+        "is_using_custom_profile_image": true
+    },
+    "profile_publicity": {
+        "gender": "public",
+        "region": "public",
+        "birth_day": "public",
+        "birth_year": "public",
+        "job": "public",
+        "pawoo": true
+    },
+    "workspace": {
+        "pc": "",
+        "monitor": "",
+        "tool": "",
+        "scanner": "",
+        "tablet": "",
+        "mouse": "",
+        "printer": "",
+        "desktop": "",
+        "music": "",
+        "desk": "",
+        "chair": "",
+        "comment": "",
+        "workspace_image_url": null
+    }
+}

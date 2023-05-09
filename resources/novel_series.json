@@ -1,0 +1,181 @@
+{
+    "novel_series_detail": {
+        "id": 1238664,
+        "title": "アローラ！",
+        "caption": "アローラ地方に新婚旅行にいくキバユウ",
+        "is_original": false,
+        "is_concluded": false,
+        "content_count": 13,
+        "total_character_count": 44907,
+        "user": {
+            "id": 3066912,
+            "name": "ポプコ",
+            "account": "fitomi",
+            "profile_image_urls": {
+                "medium": "https://i.pximg.net/user-profile/img/2019/09/30/21/21/50/16351585_cdd91e7576dc53ab2c6e1bbcf9cdbd37_170.jpg"
+            },
+            "is_followed": false
+        },
+        "display_text": "アローラ地方に新婚旅行にいくキバユウ"
+    },
+    "novel_series_first_novel": {
+        "id": 12248944,
+        "title": "アローラ！vol.2",
+        "caption": "女子会ってすごくダラダラしますね。ええ、本当に。",
+        "restrict": 0,
+        "x_restrict": 0,
+        "is_original": false,
+        "image_urls": {
+            "square_medium": "https://s.pximg.net/common/images/novel_thumb/novel_thumb_0_128x128.jpg",
+            "medium": "https://s.pximg.net/common/images/novel_thumb/novel_thumb_0_176mw.jpg",
+            "large": "https://s.pximg.net/common/images/novel_thumb/novel_thumb_0_240mw.jpg"
+        },
+        "create_date": "2020-01-19T10:01:21+09:00",
+        "tags": [
+            {
+                "name": "キバユウ",
+                "translated_name": null,
+                "added_by_uploaded_user": true
+            },
+            {
+                "name": "ポケモン剣盾",
+                "translated_name": "Pokémon Sword and Shield",
+                "added_by_uploaded_user": true
+            },
+            {
+                "name": "女子会",
+                "translated_name": null,
+                "added_by_uploaded_user": true
+            }
+        ],
+        "page_count": 2,
+        "text_length": 2832,
+        "user": {
+            "id": 3066912,
+            "name": "ポプコ",
+            "account": "fitomi",
+            "profile_image_urls": {
+                "medium": "https://i.pximg.net/user-profile/img/2019/09/30/21/21/50/16351585_cdd91e7576dc53ab2c6e1bbcf9cdbd37_170.jpg"
+            },
+            "is_followed": false
+        },
+        "series": {
+            "id": 1238664,
+            "title": "アローラ！"
+        },
+        "is_bookmarked": false,
+        "total_bookmarks": 39,
+        "total_view": 802,
+        "visible": true,
+        "total_comments": 0,
+        "is_muted": false,
+        "is_mypixiv_only": false,
+        "is_x_restricted": false
+    },
+    "novel_series_latest_novel": {
+        "id": 12280943,
+        "title": "アローラ！最終話",
+        "caption": "やっとアーモンドの花から始まったストーリーが終わりました。読了してくださった皆様に感謝です。",
+        "restrict": 0,
+        "x_restrict": 0,
+        "is_original": false,
+        "image_urls": {
+            "square_medium": "https://i.pximg.net/c/128x128/novel-cover-master/img/2020/01/26/16/26/45/12280943_fe8c7e4d5ead00630acc045ec6118cf3_square1200.jpg",
+            "medium": "https://i.pximg.net/c/176x352/novel-cover-master/img/2020/01/26/16/26/45/12280943_fe8c7e4d5ead00630acc045ec6118cf3_master1200.jpg",
+            "large": "https://i.pximg.net/c/240x480_80/novel-cover-master/img/2020/01/26/16/26/45/12280943_fe8c7e4d5ead00630acc045ec6118cf3_master1200.jpg"
+        },
+        "create_date": "2020-01-26T16:26:45+09:00",
+        "tags": [
+            {
+                "name": "キバユウ",
+                "translated_name": null,
+                "added_by_uploaded_user": true
+            },
+            {
+                "name": "ポケモン剣盾",
+                "translated_name": "Pokémon Sword and Shield",
+                "added_by_uploaded_user": true
+            }
+        ],
+        "page_count": 6,
+        "text_length": 3043,
+        "user": {
+            "id": 3066912,
+            "name": "ポプコ",
+            "account": "fitomi",
+            "profile_image_urls": {
+                "medium": "https://i.pximg.net/user-profile/img/2019/09/30/21/21/50/16351585_cdd91e7576dc53ab2c6e1bbcf9cdbd37_170.jpg"
+            },
+            "is_followed": false
+        },
+        "series": {
+            "id": 1238664,
+            "title": "アローラ！"
+        },
+        "is_bookmarked": false,
+        "total_bookmarks": 15,
+        "total_view": 365,
+        "visible": true,
+        "total_comments": 2,
+        "is_muted": false,
+        "is_mypixiv_only": false,
+        "is_x_restricted": false
+    },
+    "novels": [
+        {
+            "id": 12248944,
+            "title": "アローラ！vol.2",
+            "caption": "女子会ってすごくダラダラしますね。ええ、本当に。",
+            "restrict": 0,
+            "x_restrict": 0,
+            "is_original": false,
+            "image_urls": {
+                "square_medium": "https://s.pximg.net/common/images/novel_thumb/novel_thumb_0_128x128.jpg",
+                "medium": "https://s.pximg.net/common/images/novel_thumb/novel_thumb_0_176mw.jpg",
+                "large": "https://s.pximg.net/common/images/novel_thumb/novel_thumb_0_240mw.jpg"
+            },
+            "create_date": "2020-01-19T10:01:21+09:00",
+            "tags": [
+                {
+                    "name": "キバユウ",
+                    "translated_name": null,
+                    "added_by_uploaded_user": true
+                },
+                {
+                    "name": "ポケモン剣盾",
+                    "translated_name": "Pokémon Sword and Shield",
+                    "added_by_uploaded_user": true
+                },
+                {
+                    "name": "女子会",
+                    "translated_name": null,
+                    "added_by_uploaded_user": true
+                }
+            ],
+            "page_count": 2,
+            "text_length": 2832,
+            "user": {
+                "id": 3066912,
+                "name": "ポプコ",
+                "account": "fitomi",
+                "profile_image_urls": {
+                    "medium": "https://i.pximg.net/user-profile/img/2019/09/30/21/21/50/16351585_cdd91e7576dc53ab2c6e1bbcf9cdbd37_170.jpg"
+                },
+                "is_followed": false
+            },
+            "series": {
+                "id": 1238664,
+                "title": "アローラ！"
+            },
+            "is_bookmarked": false,
+            "total_bookmarks": 39,
+            "total_view": 802,
+            "visible": true,
+            "total_comments": 0,
+            "is_muted": false,
+            "is_mypixiv_only": false,
+            "is_x_restricted": false
+        }
+    ],
+    "next_url": null
+}
