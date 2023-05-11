@@ -157,13 +157,19 @@ pub mod auth {
                 client_builder = client_builder.proxy(proxy.clone());
             }
             let client = client_builder.build().unwrap();
-            let res: Value = client
+            let res = client
                 .post("https://oauth.secure.pixiv.net/auth/token")
                 .form(&formbody)
-                .send()
-                .unwrap()
-                .json()
-                .unwrap();
+                .send().map_err(|e| {
+                    panic!("{e:#?}")
+                }).unwrap();
+            if !res.status().is_success() {
+                panic!("Auth error {:#?}", res.headers());
+            }
+
+            let res: Value = res.json().map_err(|e| {
+                    panic!("{e:#?}")
+                }).unwrap();
             if res.get("has_error").is_none() {
                 let mut response: Response =
                     serde_json::from_value(res["response"].clone()).unwrap();
@@ -231,6 +237,7 @@ pub mod api {
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
     type ApiResult<T> = Result<T, ApiError>;
+    type RequestResult<T> = Result<ApiResult<T>, dyn Error>;
 
     use crate::{
         error::ApiError,
@@ -251,7 +258,7 @@ pub mod api {
         auth::{Response, User},
         Response::{BookmarkTags, Illusts},
     };
-    use std::{collections::HashMap, rc::Rc, str::FromStr};
+    use std::{collections::HashMap, rc::Rc, str::FromStr, error::Error};
 
     #[macro_export]
     macro_rules! params {
@@ -603,7 +610,7 @@ pub mod api {
                 }
                 Client::response(req)
             }
-            pub fn follow_add(&self, user_id: u64, restrict: Restrict) {
+            pub fn follow_add(&self, user_id: u64, restrict: Restrict) -> ApiResult<()> {
                 let mut req = self
                     .client
                     .as_ref()
@@ -613,8 +620,9 @@ pub mod api {
                     "user_id" => user_id,
                     "restrict" => restrict,
                     });
+                Client::response(req)
             }
-            pub fn follow_delete(&self, user_id: u64) {
+            pub fn follow_delete(&self, user_id: u64) -> ApiResult<()> {
                 let mut req = self
                     .client
                     .as_ref()
@@ -623,6 +631,7 @@ pub mod api {
                     .form(&params! {
                     "user_id" => user_id,
                     });
+                Client::response(req)
             }
 
             pub fn following(
@@ -682,7 +691,7 @@ pub mod api {
                     .query(&[("illust_id", illust_id)]);
                 Client::response(req)
             }
-            pub fn bookmark_add(&self, illust_id: u64, restrict: Restrict) {
+            pub fn bookmark_add(&self, illust_id: u64, restrict: Restrict) -> ApiResult<()> {
                 let mut req = self
                     .client
                     .as_ref()
@@ -690,16 +699,16 @@ pub mod api {
                     .request(Method::POST, "/v2/illust/bookmark/add")
                     .query(&[("illust_id", illust_id)])
                     .query(&[("restrict", restrict.to_string())]);
-                req.send().unwrap();
+                Client::response(req)
             }
-            pub fn bookmark_delete(&self, illust_id: u64) {
+            pub fn bookmark_delete(&self, illust_id: u64) -> ApiResult<()> {
                 let mut req = self
                     .client
                     .as_ref()
                     .unwrap()
                     .request(Method::POST, "/v2/illust/bookmark/delete")
                     .query(&[("illust_id", illust_id)]);
-                req.send().unwrap();
+                Client::response(req)
             }
             pub fn bookmark_detail(
                 &self,
@@ -825,7 +834,7 @@ pub mod api {
                     .query(&[("novel_id", novel_id)]);
                 Client::response(req)
             }
-            pub fn bookmark_add(&self, novel_id: u64, restrict: Restrict) {
+            pub fn bookmark_add(&self, novel_id: u64, restrict: Restrict) -> ApiResult<()> {
                 let mut req = self
                     .client
                     .as_ref()
@@ -833,16 +842,16 @@ pub mod api {
                     .request(Method::POST, "/v2/novel/bookmark/add")
                     .query(&[("novel_id", novel_id)])
                     .query(&[("restrict", restrict.to_string())]);
-                req.send().unwrap();
+                Client::response(req)
             }
-            pub fn bookmark_delete(&self, novel_id: u64) {
+            pub fn bookmark_delete(&self, novel_id: u64) -> ApiResult<()> {
                 let mut req = self
                     .client
                     .as_ref()
                     .unwrap()
                     .request(Method::POST, "/v2/novel/bookmark/delete")
                     .query(&[("novel_id", novel_id)]);
-                req.send().unwrap();
+                Client::response(req)
             }
             pub fn bookmark_detail(
                 &self,

@@ -23,9 +23,9 @@ mod tests {
 
     #[test]
     fn api_test() {
-        let token = "[refresh token]";
+        let token = "OOVwt1_ZrLTjlzKWmirNmbK_WuwOookfSGYTZnDRLcI";
         let mut h = auth::ClientBudiler::new();
-        h.refresh_token(token);
+        h.refresh_token(token).proxy(Proxy::all("http://localhost:15777").unwrap());
         let client = h.build().unwrap();
         println!("User Api Test Start");
         let userid = 1391461;
