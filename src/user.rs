@@ -7,12 +7,15 @@ pub struct ProfileImageUrls {
 
 
 pub mod user {
+    use std::rc::Rc;
+
+    use reqwest::Method;
     use serde::{Deserialize, Serialize};
 
     use crate::{
         illust::{illust::Illust, ImageUrls},
         novel::novel::Novel,
-        traits::NextUrl, preload::Publicity,
+        traits::NextUrl, preload::Publicity, client::api::{Client, ApiResult},
     };
 
     use super::{ProfileImageUrls};
@@ -21,6 +24,8 @@ pub mod user {
     pub struct Previews {
         user_previews: Vec<Preview>,
         next_url: Option<String>,
+        #[serde(skip)]
+        pub(crate) client: Option<Rc<Client>>,
     }
 
     impl Previews {
@@ -33,8 +38,13 @@ pub mod user {
         fn has_next(&self) -> bool {
             self.next_url.is_some()
         }
-        fn next_url(&self) -> Option<Self::Output> {
-            unimplemented!()
+        fn next_url(&self) -> Option<ApiResult<Self::Output>> {
+            let mut ret: ApiResult<Self::Output> = Client::response(self.client.as_ref()?.request(Method::GET, self.next_url.as_ref()?));
+            Some(ret.map(|v| {
+                let mut v = v;
+                v.client = self.client.clone();
+                v
+            }))
         }
     }
 

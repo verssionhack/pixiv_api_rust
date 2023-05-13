@@ -1,9 +1,12 @@
 pub mod novel {
+    use std::rc::Rc;
+
     use chrono::NaiveDateTime;
+    use reqwest::Method;
     use serde::{Serialize, Deserialize};
     use serde_json::Value;
 
-    use crate::{user::user::User, illust::{ImageUrls}, utils::{datetime_deserializer, datetime_serializer}, traits::NextUrl, preload::{PrivacyPolicy, Restrict, XRestrict}};
+    use crate::{user::user::User, illust::{ImageUrls}, utils::{datetime_deserializer, datetime_serializer}, traits::NextUrl, preload::{PrivacyPolicy, Restrict, XRestrict}, client::api::{Client, ApiResult}};
 
 
     #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -13,6 +16,8 @@ pub mod novel {
         contest_exists: bool,
         privacy_policy: PrivacyPolicy,
         next_url: Option<String>,
+        #[serde(skip)]
+        pub(crate) client: Option<Rc<Client>>,
     }
 
     impl NextUrl for Recommended {
@@ -20,8 +25,13 @@ pub mod novel {
         fn has_next(&self) -> bool {
             self.next_url.is_some()
         }
-        fn next_url(&self) -> Option<Self::Output> {
-            unimplemented!()
+        fn next_url(&self) -> Option<ApiResult<Self::Output>> {
+            let mut ret: ApiResult<Self::Output> = Client::response(self.client.as_ref()?.request(Method::GET, self.next_url.as_ref()?));
+            Some(ret.map(|v| {
+                let mut v = v;
+                v.client = self.client.clone();
+                v
+            }))
         }
     }
 
@@ -32,6 +42,8 @@ pub mod novel {
         novels: Vec<Novel>,
         user: User,
         next_url: Option<String>,
+        #[serde(skip)]
+        pub(crate) client: Option<Rc<Client>>,
     }
 
     impl NextUrl for Detail {
@@ -39,8 +51,13 @@ pub mod novel {
         fn has_next(&self) -> bool {
             self.next_url.is_some()
         }
-        fn next_url(&self) -> Option<Self::Output> {
-           unimplemented!() 
+        fn next_url(&self) -> Option<ApiResult<Self::Output>> {
+            let mut ret: ApiResult<Self::Output> = Client::response(self.client.as_ref()?.request(Method::GET, self.next_url.as_ref()?));
+            Some(ret.map(|v| {
+                let mut v = v;
+                v.client = self.client.clone();
+                v
+            }))
         }
     }
 
@@ -180,15 +197,20 @@ pub mod novel {
     }
 }
 pub mod comments {
+    use std::rc::Rc;
+
     use chrono::NaiveDateTime;
+    use reqwest::Method;
     use serde::{Serialize, Deserialize};
 
-    use crate::{user::ProfileImageUrls, utils::{datetime_deserializer, datetime_serializer}, traits::NextUrl};
+    use crate::{user::ProfileImageUrls, utils::{datetime_deserializer, datetime_serializer}, traits::NextUrl, client::api::{Client, ApiResult}};
 
     #[derive(Clone, Serialize, Deserialize, Debug)]
     pub struct Detail {
         comments: Vec<Comment>,
         next_url: Option<String>,
+        #[serde(skip)]
+        pub(crate) client: Option<Rc<Client>>,
     }
     impl Detail {
         pub fn comments(&self) -> &Vec<Comment> {
@@ -200,8 +222,13 @@ pub mod comments {
         fn has_next(&self) -> bool {
             self.next_url.is_some()
         }
-        fn next_url(&self) -> Option<Self::Output> {
-            unimplemented!()
+        fn next_url(&self) -> Option<ApiResult<Self::Output>> {
+            let mut ret: ApiResult<Self::Output> = Client::response(self.client.as_ref()?.request(Method::GET, self.next_url.as_ref()?));
+            Some(ret.map(|v| {
+                let mut v = v;
+                v.client = self.client.clone();
+                v
+            }))
         }
     }
 
@@ -257,9 +284,12 @@ pub mod comments {
 }
 
 pub mod series {
+    use std::rc::Rc;
+
+    use reqwest::Method;
     use serde::{Serialize, Deserialize};
 
-    use crate::{user::user::User, traits::NextUrl};
+    use crate::{user::user::User, traits::NextUrl, client::api::{Client, ApiResult}};
 
     use super::novel::Novel;
 
@@ -270,6 +300,8 @@ pub mod series {
         novel_series_latest_novel: Novel,
         novels: Vec<Novel>,
         next_url: Option<String>,
+        #[serde(skip)]
+        pub(crate) client: Option<Rc<Client>>,
     }
     impl SeriesNovelResponse {
         pub fn novel_series_detail(&self) -> &SeriesDetail {
@@ -290,8 +322,13 @@ pub mod series {
         fn has_next(&self) -> bool {
             self.next_url.is_some()
         }
-        fn next_url(&self) -> Option<Self::Output> {
-            unimplemented!()
+        fn next_url(&self) -> Option<ApiResult<Self::Output>> {
+            let mut ret: ApiResult<Self::Output> = Client::response(self.client.as_ref()?.request(Method::GET, self.next_url.as_ref()?));
+            Some(ret.map(|v| {
+                let mut v = v;
+                v.client = self.client.clone();
+                v
+            }))
         }
     }
 

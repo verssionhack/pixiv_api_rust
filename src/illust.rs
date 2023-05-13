@@ -25,13 +25,16 @@ impl ImageUrls {
 }
 
 pub mod series {
+    use std::rc::Rc;
+
     use chrono::NaiveDateTime;
+    use reqwest::Method;
     use serde::{Deserialize, Serialize};
 
     use crate::{
         traits::{NextUrl, Pagible},
         user::user::User,
-        utils::{datetime_deserializer, datetime_serializer},
+        utils::{datetime_deserializer, datetime_serializer}, client::api::{Client, ApiResult},
     };
 
     use super::illust::Illust;
@@ -42,6 +45,8 @@ pub mod series {
         illust_series_first_illust: Illust,
         illusts: Vec<Illust>,
         next_url: Option<String>,
+        #[serde(skip)]
+        pub(crate) client: Option<Rc<Client>>,
     }
     impl SeriesResponse {
         pub fn illust_series_detail(&self) -> &SeriesDetail {
@@ -59,11 +64,16 @@ pub mod series {
     }
     impl NextUrl for SeriesResponse {
         type Output = Self;
-        fn next_url(&self) -> Option<Self::Output> {
-            unimplemented!()
-        }
         fn has_next(&self) -> bool {
             self.next_url().is_some()
+        }
+        fn next_url(&self) -> Option<ApiResult<Self::Output>> {
+            let mut ret: ApiResult<Self::Output> = Client::response(self.client.as_ref()?.request(Method::GET, self.next_url.as_ref()?));
+            Some(ret.map(|v| {
+                let mut v = v;
+                v.client = self.client.clone();
+                v
+            }))
         }
     }
 
@@ -142,6 +152,8 @@ pub mod series {
         content_order: u64,
         prev: Option<Illust>,
         next: Option<Illust>,
+        #[serde(skip)]
+        pub(crate) client: Option<Rc<Client>>,
     }
 
     impl SeriesContext {
@@ -151,18 +163,21 @@ pub mod series {
     }
 
     impl Pagible for SeriesContext {
-        type Output = Self;
+        type Output = Illust;
         fn next(&self) -> Option<Self::Output> {
-            unimplemented!()
+            self.next.clone()
         }
         fn prev(&self) -> Option<Self::Output> {
-            unimplemented!()
+            self.prev.clone()
         }
     }
 }
 
 pub mod illust {
+    use std::rc::Rc;
+
     use chrono::NaiveDateTime;
+    use reqwest::Method;
     use serde::{Deserialize, Serialize};
 
     use crate::{
@@ -170,7 +185,7 @@ pub mod illust {
         preload::{PrivacyPolicy, Restrict, XRestrict, IllustType},
         traits::NextUrl,
         user::user::{User, UserDetail},
-        utils::{datetime_deserializer, datetime_serializer},
+        utils::{datetime_deserializer, datetime_serializer}, client::api::{Client, ApiResult},
     };
 
     use super::{ImageUrls};
@@ -183,6 +198,8 @@ pub mod illust {
         contest_exists: bool,
         privacy_policy: PrivacyPolicy,
         next_url: Option<String>,
+        #[serde(skip)]
+        pub(crate) client: Option<Rc<Client>>,
     }
     impl Recommended {
         pub fn illusts(&self) -> &Vec<Illust> {
@@ -204,8 +221,13 @@ pub mod illust {
         fn has_next(&self) -> bool {
             self.next_url.is_some()
         }
-        fn next_url(&self) -> Option<Self::Output> {
-            unimplemented!()
+        fn next_url(&self) -> Option<ApiResult<Self::Output>> {
+            let mut ret: ApiResult<Self::Output> = Client::response(self.client.as_ref()?.request(Method::GET, self.next_url.as_ref()?));
+            Some(ret.map(|v| {
+                let mut v = v;
+                v.client = self.client.clone();
+                v
+            }))
         }
     }
 
@@ -409,18 +431,23 @@ pub mod illust {
 }
 
 pub mod comments {
+    use std::rc::Rc;
+
     use crate::{
         traits::NextUrl,
         user::ProfileImageUrls,
-        utils::{datetime_deserializer, datetime_serializer},
+        utils::{datetime_deserializer, datetime_serializer}, client::api::{Client, ApiResult},
     };
     use chrono::NaiveDateTime;
+    use reqwest::Method;
     use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Serialize, Deserialize, Debug)]
     pub struct Detail {
         comments: Vec<Comment>,
         next_url: Option<String>,
+        #[serde(skip)]
+        pub(crate) client: Option<Rc<Client>>,
     }
 
     impl Detail {
@@ -433,8 +460,13 @@ pub mod comments {
         fn has_next(&self) -> bool {
             self.next_url.is_some()
         }
-        fn next_url(&self) -> Option<Self::Output> {
-            unimplemented!()
+        fn next_url(&self) -> Option<ApiResult<Self::Output>> {
+            let mut ret: ApiResult<Self::Output> = Client::response(self.client.as_ref()?.request(Method::GET, self.next_url.as_ref()?));
+            Some(ret.map(|v| {
+                let mut v = v;
+                v.client = self.client.clone();
+                v
+            }))
         }
     }
 
