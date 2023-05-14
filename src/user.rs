@@ -7,7 +7,7 @@ pub struct ProfileImageUrls {
 
 
 pub mod user {
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     use reqwest::Method;
     use serde::{Deserialize, Serialize};
@@ -25,7 +25,7 @@ pub mod user {
         user_previews: Vec<Preview>,
         next_url: Option<String>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
 
     impl Previews {
@@ -113,8 +113,8 @@ pub mod user {
         pub fn profile_image_urls(&self) -> &ProfileImageUrls {
             &self.profile_image_urls
         }
-        pub fn comment(&self) -> Option<&String> {
-            self.comment.as_ref()
+        pub fn comment(&self) -> Option<&str> {
+            self.comment.as_ref().map(|v| v.as_str())
         }
     }
 
@@ -141,8 +141,8 @@ pub mod user {
         pub fn profile_image_urls(&self) -> &ProfileImageUrls {
             &self.profile_image_urls
         }
-        pub fn comment(&self) -> Option<&String> {
-            self.comment.as_ref()
+        pub fn comment(&self) -> Option<&str> {
+            self.comment.as_ref().map(|v| v.as_str())
         }
         pub fn is_followed(&self) -> bool {
             self.is_followed
@@ -178,8 +178,8 @@ pub mod user {
     }
 
     impl Profile {
-        pub fn webpage(&self) -> Option<&String> {
-            self.webpage.as_ref()
+        pub fn webpage(&self) -> Option<&str> {
+            self.webpage.as_ref().map(|v| v.as_str())
         }
         pub fn gender(&self) -> &str {
             &self.gender
@@ -232,17 +232,17 @@ pub mod user {
         pub fn total_novel_series(&self) -> u64 {
             self.total_novel_series
         }
-        pub fn background_image_url(&self) -> Option<&String> {
-            self.background_image_url.as_ref()
+        pub fn background_image_url(&self) -> Option<&str> {
+            self.background_image_url.as_ref().map(|v| v.as_str())
         }
         pub fn twitter_account(&self) -> &str {
             &self.twitter_account
         }
-        pub fn twitter_url(&self) -> Option<&String> {
-            self.twitter_url.as_ref()
+        pub fn twitter_url(&self) -> Option<&str> {
+            self.twitter_url.as_ref().map(|v| v.as_str())
         }
-        pub fn pawoo_url(&self) -> Option<&String> {
-            self.pawoo_url.as_ref()
+        pub fn pawoo_url(&self) -> Option<&str> {
+            self.pawoo_url.as_ref().map(|v| v.as_str())
         }
         pub fn is_premium(&self) -> bool {
             self.is_premium
@@ -335,8 +335,8 @@ pub mod user {
         pub fn comment(&self) -> &str {
             &self.comment
         }
-        pub fn workspace_image_url(&self) -> Option<&String> {
-            self.workspace_image_url.as_ref()
+        pub fn workspace_image_url(&self) -> Option<&str> {
+            self.workspace_image_url.as_ref().map(|v| v.as_str())
         }
     }
 
@@ -372,7 +372,7 @@ pub mod user {
         pub fn id(&self) -> &u64 {
             &self.id
         }
-        pub fn name(&self) -> &String {
+        pub fn name(&self) -> &str {
             &self.name
         }
         pub fn is_global(&self) -> &bool {
@@ -386,10 +386,10 @@ pub mod user {
         name: String,
     }
     impl Country {
-        pub fn code(&self) -> &String {
+        pub fn code(&self) -> &str {
             &self.code
         }
-        pub fn name(&self) -> &String {
+        pub fn name(&self) -> &str {
             &self.name
         }
     }
@@ -403,7 +403,7 @@ pub mod user {
         pub fn id(&self) -> &u64 {
             &self.id
         }
-        pub fn name(&self) -> &String {
+        pub fn name(&self) -> &str {
             &self.name
         }
     }

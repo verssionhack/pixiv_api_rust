@@ -1,5 +1,5 @@
 pub mod novel {
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     use chrono::NaiveDateTime;
     use reqwest::Method;
@@ -17,7 +17,7 @@ pub mod novel {
         privacy_policy: PrivacyPolicy,
         next_url: Option<String>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
 
     impl NextUrl for Recommended {
@@ -43,7 +43,7 @@ pub mod novel {
         user: User,
         next_url: Option<String>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
 
     impl NextUrl for Detail {
@@ -78,8 +78,8 @@ pub mod novel {
         pub fn id(&self) -> Option<u64> {
             self.id
         }
-        pub fn title(&self) -> Option<&String> {
-            self.title.as_ref()
+        pub fn title(&self) -> Option<&str> {
+            self.title.as_ref().map(|v| v.as_str())
         }
     }
 
@@ -197,7 +197,7 @@ pub mod novel {
     }
 }
 pub mod comments {
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     use chrono::NaiveDateTime;
     use reqwest::Method;
@@ -210,7 +210,7 @@ pub mod comments {
         comments: Vec<Comment>,
         next_url: Option<String>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
     impl Detail {
         pub fn comments(&self) -> &Vec<Comment> {
@@ -284,7 +284,7 @@ pub mod comments {
 }
 
 pub mod series {
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     use reqwest::Method;
     use serde::{Serialize, Deserialize};
@@ -301,7 +301,7 @@ pub mod series {
         novels: Vec<Novel>,
         next_url: Option<String>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
     impl SeriesNovelResponse {
         pub fn novel_series_detail(&self) -> &SeriesDetail {

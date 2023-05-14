@@ -35,7 +35,7 @@ impl AuthError {
     pub fn errors(&self) -> &AuthErrorDetails {
         &self.errors
     }
-    pub fn error(&self) -> &String {
+    pub fn error(&self) -> &str {
         &self.error
     }
 }
@@ -46,7 +46,7 @@ pub struct System {
     code: u64,
 }
 impl System {
-    pub fn message(&self) -> &String {
+    pub fn message(&self) -> &str {
         &self.message
     }
     pub fn code(&self) -> &u64 {
@@ -122,13 +122,13 @@ pub struct ApiErrorDetails {
     user_message_details: UserMessageDetail,
 }
 impl ApiErrorDetails {
-    pub fn user_message(&self) -> &String {
+    pub fn user_message(&self) -> &str {
         &self.user_message
     }
-    pub fn message(&self) -> &String {
+    pub fn message(&self) -> &str {
         &self.message
     }
-    pub fn reason(&self) -> &String {
+    pub fn reason(&self) -> &str {
         &self.reason
     }
     pub fn user_message_details(&self) -> &UserMessageDetail {

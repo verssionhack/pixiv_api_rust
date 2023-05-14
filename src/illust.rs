@@ -10,22 +10,22 @@ pub struct ImageUrls {
 }
 
 impl ImageUrls {
-    pub fn square_medium(&self) -> Option<&String> {
-        self.square_medium.as_ref()
+    pub fn square_medium(&self) -> Option<&str> {
+        self.square_medium.as_ref().map(|v| v.as_str())
     }
-    pub fn medium(&self) -> Option<&String> {
-        self.medium.as_ref()
+    pub fn medium(&self) -> Option<&str> {
+        self.medium.as_ref().map(|v| v.as_str())
     }
-    pub fn large(&self) -> Option<&String> {
-        self.large.as_ref()
+    pub fn large(&self) -> Option<&str> {
+        self.large.as_ref().map(|v| v.as_str())
     }
-    pub fn original(&self) -> Option<&String> {
-        self.original.as_ref()
+    pub fn original(&self) -> Option<&str> {
+        self.original.as_ref().map(|v| v.as_str())
     }
 }
 
 pub mod series {
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     use chrono::NaiveDateTime;
     use reqwest::Method;
@@ -46,7 +46,7 @@ pub mod series {
         illusts: Vec<Illust>,
         next_url: Option<String>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
     impl SeriesResponse {
         pub fn illust_series_detail(&self) -> &SeriesDetail {
@@ -58,8 +58,8 @@ pub mod series {
         pub fn illusts(&self) -> &Vec<Illust> {
             self.illusts.as_ref()
         }
-        pub fn next_url(&self) -> Option<&String> {
-            self.next_url.as_ref()
+        pub fn next_url(&self) -> Option<&str> {
+            self.next_url.as_ref().map(|v| v.as_str())
         }
     }
     impl NextUrl for SeriesResponse {
@@ -153,7 +153,7 @@ pub mod series {
         prev: Option<Illust>,
         next: Option<Illust>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
 
     impl SeriesContext {
@@ -174,7 +174,7 @@ pub mod series {
 }
 
 pub mod illust {
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     use chrono::NaiveDateTime;
     use reqwest::Method;
@@ -199,7 +199,7 @@ pub mod illust {
         privacy_policy: PrivacyPolicy,
         next_url: Option<String>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
     impl Recommended {
         pub fn illusts(&self) -> &Vec<Illust> {
@@ -240,8 +240,8 @@ pub mod illust {
         pub fn name(&self) -> &str {
             &self.name
         }
-        pub fn translated_name(&self) -> Option<&String> {
-            self.translated_name.as_ref()
+        pub fn translated_name(&self) -> Option<&str> {
+            self.translated_name.as_ref().map(|v| v.as_str())
         }
     }
 
@@ -252,11 +252,11 @@ pub mod illust {
     }
 
     impl MetaSinglePage {
-        pub fn description(&self) -> Option<&String> {
-            self.description.as_ref()
+        pub fn description(&self) -> Option<&str> {
+            self.description.as_ref().map(|v| v.as_str())
         }
-        pub fn original_image_url(&self) -> Option<&String> {
-            self.original_image_url.as_ref()
+        pub fn original_image_url(&self) -> Option<&str> {
+            self.original_image_url.as_ref().map(|v| v.as_str())
         }
     }
 
@@ -278,8 +278,8 @@ pub mod illust {
     }
 
     impl MetaPage {
-        pub fn description(&self) -> Option<&String> {
-            self.description.as_ref()
+        pub fn description(&self) -> Option<&str> {
+            self.description.as_ref().map(|v| v.as_str())
         }
         pub fn image_urls(&self) -> &ImageUrls {
             &self.image_urls
@@ -431,7 +431,7 @@ pub mod illust {
 }
 
 pub mod comments {
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     use crate::{
         traits::NextUrl,
@@ -447,7 +447,7 @@ pub mod comments {
         comments: Vec<Comment>,
         next_url: Option<String>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
 
     impl Detail {
@@ -547,8 +547,8 @@ pub mod ugoira {
         medium: Option<String>,
     }
     impl ZipUrls {
-        pub fn medium(&self) -> Option<&String> {
-            self.medium.as_ref()
+        pub fn medium(&self) -> Option<&str> {
+            self.medium.as_ref().map(|v| v.as_str())
         }
     }
 

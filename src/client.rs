@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 const CLIENT_ID: &'static str = "MOBrBDS8blbauoSck0ZfDbtuzpyT";
 const CLIENT_SECRET: &'static str = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj";
 
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ApiNone {}
 pub mod auth {
@@ -52,8 +53,8 @@ pub mod auth {
         pub fn user(&self) -> &User {
             &self.user
         }
-        pub fn device_token(&self) -> Option<&String> {
-            self.device_token.as_ref()
+        pub fn device_token(&self) -> Option<&str> {
+            self.device_token.as_ref().map(|v| v.as_str())
         }
         pub fn proxy(&self) -> Option<Proxy> {
             self.proxy.clone()
@@ -134,7 +135,7 @@ pub mod auth {
         pub fn new() -> Self {
             Self::default()
         }
-        pub fn build(self) -> Result<super::api::Client, AuthError> {
+        pub fn build(&self) -> Result<super::api::Client, AuthError> {
             let mut headers = HeaderMap::new();
             headers.insert(
                 REFERER,
@@ -178,7 +179,7 @@ pub mod auth {
             if res.get("has_error").is_none() {
                 let mut response: Response =
                     serde_json::from_value(res["response"].clone()).unwrap();
-                response.proxy = self.proxy;
+                response.proxy = self.proxy.clone();
                 Ok(response.into())
             } else {
                 Err(serde_json::from_value(res).unwrap())
@@ -237,7 +238,7 @@ pub mod api {
     use reqwest::{
         blocking::{Request, RequestBuilder},
         header::{HeaderMap, REFERER, USER_AGENT},
-        Method, Proxy, Url,
+        Method, Proxy, Url, StatusCode,
     };
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
@@ -263,7 +264,7 @@ pub mod api {
         auth::{Response, User},
         response::{BookmarkTags, Illusts},
     };
-    use std::{collections::HashMap, rc::Rc, str::FromStr, error::Error};
+    use std::{collections::HashMap, sync::{Arc, Mutex}, str::FromStr, error::Error, cell::RefCell};
 
     #[macro_export]
     macro_rules! params {
@@ -285,7 +286,7 @@ pub mod api {
 
     pub mod api_search {
 
-        use std::rc::Rc;
+        use std::sync::Arc;
 
         use reqwest::Method;
         use serde::{Deserialize, Serialize};
@@ -297,7 +298,7 @@ pub mod api {
 
         #[derive(Clone, Default, Debug)]
         pub struct SearchApi {
-            pub client: Option<Rc<Client>>,
+            pub client: Option<Arc<Client>>,
         }
         impl SearchApi {
             pub fn autocomplete<T>(&self, word: T, merge_plain_keyword_results: bool) -> ApiResult<SearchAutoCompleteKeywords>
@@ -482,7 +483,7 @@ pub mod api {
         }
     }
     pub mod api_user {
-        use std::rc::Rc;
+        use std::sync::Arc;
 
         use reqwest::Method;
 
@@ -492,7 +493,7 @@ pub mod api {
 
         #[derive(Clone, Default, Debug)]
         pub struct UserApi {
-            pub client: Option<Rc<Client>>,
+            pub client: Option<Arc<Client>>,
         }
         impl UserApi {
             pub fn detail(&self, user_id: u64) -> ApiResult<user::user::Detail> {
@@ -714,7 +715,7 @@ pub mod api {
     }
     pub mod api_illust {
 
-        use std::rc::Rc;
+        use std::sync::Arc;
 
         use reqwest::Method;
 
@@ -724,7 +725,7 @@ pub mod api {
 
         #[derive(Clone, Default, Debug)]
         pub struct IllustApi {
-            pub client: Option<Rc<Client>>,
+            pub client: Option<Arc<Client>>,
         }
         impl IllustApi {
             pub fn detail(&self, illust_id: u64) -> ApiResult<illust::illust::Detail> {
@@ -892,7 +893,7 @@ pub mod api {
     }
     pub mod api_novel {
 
-        use std::rc::Rc;
+        use std::sync::Arc;
 
         use reqwest::Method;
 
@@ -902,7 +903,7 @@ pub mod api {
 
         #[derive(Clone, Default, Debug)]
         pub struct NovelApi {
-            pub client: Option<Rc<Client>>,
+            pub client: Option<Arc<Client>>,
         }
         impl NovelApi {
             pub fn detail(&self, novel_id: u64) -> ApiResult<novel::novel::Detail> {
@@ -1068,7 +1069,7 @@ pub mod api {
         scope: String,
         refresh_token: String,
         userinfo: User,
-        pub client: Rc<reqwest::blocking::Client>,
+        pub client: Arc<reqwest::blocking::Client>,
         default_headers: HeaderMap,
         pub search: SearchApi,
         pub user: UserApi,
@@ -1087,7 +1088,7 @@ pub mod api {
                     client_builder.proxy(Proxy::all("http://localhost:15777").unwrap());
             }
             let mut sf = Self {
-                client: Rc::new(client_builder.build().unwrap()),
+                client: Arc::new(client_builder.build().unwrap()),
                 default_headers: default_headers,
                 access_token: value.access_token().to_string(),
                 token_type: value.token_type().to_string(),
@@ -1100,7 +1101,7 @@ pub mod api {
                 novel: NovelApi::default(),
                 illust: IllustApi::default(),
             };
-            let sf_rc = Rc::new(sf.clone());
+            let sf_rc = Arc::new(sf.clone());
             sf.search.client = Some(sf_rc.clone());
             sf.user.client = Some(sf_rc.clone());
             sf.novel.client = Some(sf_rc.clone());
@@ -1135,11 +1136,31 @@ pub mod api {
         pub fn userinfo(&self) -> &User {
             &self.userinfo
         }
+        pub(crate) fn ensure_success_response(request: RequestBuilder) -> Result<reqwest::blocking::Response, reqwest::Error> {
+            match request.try_clone().unwrap().send() {
+                Ok(res) => {
+                    match res.status() {
+                        StatusCode::OK | StatusCode::FORBIDDEN => Ok(res),
+                        code => panic!("UnexceptedStatuCode({}) for {}\n{:#?}", code, res.url(), res.headers()),
+                    }
+                }
+                Err(err) => {
+                    if err.is_connect() | err.is_timeout() | err.is_request() {
+                        Self::ensure_success_response(request)
+                    } else {
+                        Err(err)
+                    }
+                }
+            }
+        }
         pub(crate) fn response<T>(request: RequestBuilder) -> ApiResult<T>
         where
             T: for<'de> Deserialize<'de>,
         {
-            let res_json: Value = request.send().unwrap().json().unwrap();
+            let res_json: Value = match Self::ensure_success_response(request) {
+                Ok(res) => res.json().unwrap(),
+                Err(err) => panic!("UnexceptedRequestError: {:#?}", err),
+            };
             //println!("{:#?}", res_json);
             if res_json.get("error").is_none() {
                 Ok(serde_json::from_value(res_json).unwrap())
@@ -1151,7 +1172,7 @@ pub mod api {
 }
 
 pub mod response {
-    use std::rc::Rc;
+    use std::sync::Arc;
 
     use reqwest::Method;
     use serde::{Deserialize, Serialize};
@@ -1170,7 +1191,7 @@ pub mod response {
         next_url: Option<String>,
         search_span_limit: Option<u64>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
     impl Novels {
         pub fn novels(&self) -> &Vec<novel::novel::Novel> {
@@ -1200,7 +1221,7 @@ pub mod response {
         next_url: Option<String>,
         search_span_limit: Option<u64>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
     impl Illusts {
         pub fn illusts(&self) -> &Vec<illust::Illust> {
@@ -1247,7 +1268,7 @@ pub mod response {
         bookmark_tags: Vec<Tag>,
         next_url: Option<String>,
         #[serde(skip)]
-        pub(crate) client: Option<Rc<Client>>,
+        pub(crate) client: Option<Arc<Client>>,
     }
     impl NextUrl for BookmarkTags {
         type Output = Self;
