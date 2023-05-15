@@ -7,7 +7,7 @@ const CLIENT_SECRET: &'static str = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj";
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ApiNone {}
 pub mod auth {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, time::Duration, sync::Arc};
 
     use chrono::{DateTime, NaiveDateTime};
     use reqwest::{
@@ -20,7 +20,7 @@ pub mod auth {
 
     use crate::{error::AuthError, utils::u64_deserializer, preload::GrantType};
 
-    use super::{CLIENT_ID, CLIENT_SECRET};
+    use super::{CLIENT_ID, CLIENT_SECRET, api};
 
     #[derive(Debug, Serialize, Deserialize, Clone)]
     pub struct Response {
@@ -135,7 +135,7 @@ pub mod auth {
         pub fn new() -> Self {
             Self::default()
         }
-        pub fn build(&self) -> Result<super::api::Client, AuthError> {
+        pub fn build(&self) -> Result<Arc<super::api::Client>, AuthError> {
             let mut headers = HeaderMap::new();
             headers.insert(
                 REFERER,
@@ -158,15 +158,14 @@ pub mod auth {
                 self.refresh_token.as_ref().unwrap().as_str(),
             );
             let mut client_builder =
-                reqwest::blocking::ClientBuilder::new().default_headers(headers);
+                reqwest::blocking::ClientBuilder::new().timeout(Duration::from_secs(10)).default_headers(headers);
             if let Some(proxy) = self.proxy.as_ref() {
                 client_builder = client_builder.proxy(proxy.clone());
             }
             let client = client_builder.build().unwrap();
-            let res = client
+            let res = api::Client::ensure_success_response(client
                 .post("https://oauth.secure.pixiv.net/auth/token")
-                .form(&formbody)
-                .send().map_err(|e| {
+                .form(&formbody)).map_err(|e| {
                     panic!("{e:#?}")
                 }).unwrap();
             if !res.status().is_success() {
@@ -180,7 +179,7 @@ pub mod auth {
                 let mut response: Response =
                     serde_json::from_value(res["response"].clone()).unwrap();
                 response.proxy = self.proxy.clone();
-                Ok(response.into())
+                Ok(response.build_client())
             } else {
                 Err(serde_json::from_value(res).unwrap())
             }
@@ -249,7 +248,7 @@ pub mod api {
         error::ApiError,
         illust::{self},
         novel::{self},
-        user::user,
+        user::user, ClientBudiler,
     };
 
     lazy_static! {
@@ -264,7 +263,7 @@ pub mod api {
         auth::{Response, User},
         response::{BookmarkTags, Illusts},
     };
-    use std::{collections::HashMap, sync::{Arc, Mutex}, str::FromStr, error::Error, cell::RefCell};
+    use std::{collections::HashMap, sync::{Arc, Mutex}, str::FromStr, error::Error, cell::RefCell, time::Duration};
 
     #[macro_export]
     macro_rules! params {
@@ -286,7 +285,7 @@ pub mod api {
 
     pub mod api_search {
 
-        use std::sync::Arc;
+        use std::sync::{Arc, RwLock};
 
         use reqwest::Method;
         use serde::{Deserialize, Serialize};
@@ -298,7 +297,7 @@ pub mod api {
 
         #[derive(Clone, Default, Debug)]
         pub struct SearchApi {
-            pub client: Option<Arc<Client>>,
+            pub(crate) client: Arc<RwLock<Option<Arc<Client>>>>,
         }
         impl SearchApi {
             pub fn autocomplete<T>(&self, word: T, merge_plain_keyword_results: bool) -> ApiResult<SearchAutoCompleteKeywords>
@@ -306,7 +305,7 @@ pub mod api {
                 T: ToString,
             {
                 let mut req = self
-                    .client
+                    .client.read().unwrap()
                     .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/search/autocomplete")
@@ -319,8 +318,7 @@ pub mod api {
                 T: ToString,
             {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v2/search/autocomplete")
                     .query(&[("word", word.to_string())])
@@ -332,15 +330,14 @@ pub mod api {
                 T: ToString,
             {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/search/user")
                     .query(&[("word", word.to_string())]);
                 let mut ret: ApiResult<user::user::Previews> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -356,8 +353,7 @@ pub mod api {
                 T: ToString,
             {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/search/popular-preview/novel")
                     .query(&[
@@ -386,8 +382,7 @@ pub mod api {
                 T: ToString,
             {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/search/novel")
                     .query(&[
@@ -418,8 +413,7 @@ pub mod api {
                 T: ToString,
             {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/search/popular-preview/illust")
                     .query(&[
@@ -456,8 +450,7 @@ pub mod api {
                 T: ToString,
             {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/search/illust")
                     .query(&[
@@ -483,7 +476,7 @@ pub mod api {
         }
     }
     pub mod api_user {
-        use std::sync::Arc;
+        use std::sync::{Arc, RwLock};
 
         use reqwest::Method;
 
@@ -493,13 +486,12 @@ pub mod api {
 
         #[derive(Clone, Default, Debug)]
         pub struct UserApi {
-            pub client: Option<Arc<Client>>,
+            pub(crate) client: Arc<RwLock<Option<Arc<Client>>>>,
         }
         impl UserApi {
             pub fn detail(&self, user_id: u64) -> ApiResult<user::user::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/user/detail")
                     .query(&[("user_id", user_id)]);
@@ -508,8 +500,7 @@ pub mod api {
 
             pub fn mypixiv(&self, user_id: u64, offset: usize) -> ApiResult<user::user::Previews> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/user/mypixiv")
                     .query(&[
@@ -519,7 +510,7 @@ pub mod api {
                 let mut ret: ApiResult<user::user::Previews> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -531,8 +522,7 @@ pub mod api {
                 offset: usize,
             ) -> ApiResult<response::Illusts> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/user/illusts")
                     .query(&[
@@ -543,22 +533,21 @@ pub mod api {
                 let mut ret: ApiResult<response::Illusts> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
 
             pub fn novels(&self, user_id: u64) -> ApiResult<novel::novel::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/user/novels")
                     .query(&[("user_id", user_id.to_string())]);
                 let mut ret: ApiResult<novel::novel::Detail> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -568,8 +557,7 @@ pub mod api {
                 restrict: Restrict,
             ) -> ApiResult<novel::novel::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/user/bookmarks/novel")
                     .query(&[
@@ -579,7 +567,7 @@ pub mod api {
                 let mut ret: ApiResult<novel::novel::Detail> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -589,8 +577,7 @@ pub mod api {
                 restrict: Restrict,
             ) -> ApiResult<response::BookmarkTags> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/user/bookmark-tags/illust")
                     .query(&[
@@ -606,8 +593,7 @@ pub mod api {
                 restrict: Restrict,
             ) -> ApiResult<response::BookmarkTags> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/user/bookmark-tags/novel")
                     .query(&[
@@ -625,8 +611,7 @@ pub mod api {
                 tag: Option<String>,
             ) -> ApiResult<response::Illusts> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/user/bookmarks/illust")
                     .query(&[
@@ -642,14 +627,13 @@ pub mod api {
                 let mut ret: ApiResult<response::Illusts> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
             pub fn follow_add(&self, user_id: u64, restrict: Restrict) -> ApiResult<ApiNone> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::POST, "/v1/user/follow/add")
                     .form(&params! {
@@ -660,8 +644,7 @@ pub mod api {
             }
             pub fn follow_delete(&self, user_id: u64) -> ApiResult<ApiNone> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::POST, "/v1/user/follow/delete")
                     .form(&params! {
@@ -677,8 +660,7 @@ pub mod api {
                 offset: usize,
             ) -> ApiResult<user::user::Previews> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/user/following")
                     .query(&[
@@ -689,15 +671,14 @@ pub mod api {
                 let mut ret: ApiResult<user::user::Previews> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
 
             pub fn follower(&self, user_id: u64, offset: usize) -> ApiResult<user::user::Previews> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/user/follower")
                     .query(&[
@@ -707,7 +688,7 @@ pub mod api {
                 let mut ret: ApiResult<user::user::Previews> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -715,7 +696,7 @@ pub mod api {
     }
     pub mod api_illust {
 
-        use std::sync::Arc;
+        use std::sync::{Arc, RwLock};
 
         use reqwest::Method;
 
@@ -725,13 +706,12 @@ pub mod api {
 
         #[derive(Clone, Default, Debug)]
         pub struct IllustApi {
-            pub client: Option<Arc<Client>>,
+            pub(crate) client: Arc<RwLock<Option<Arc<Client>>>>,
         }
         impl IllustApi {
             pub fn detail(&self, illust_id: u64) -> ApiResult<illust::illust::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/illust/detail")
                     .query(&[("illust_id", illust_id)]);
@@ -739,8 +719,7 @@ pub mod api {
             }
             pub fn bookmark_add(&self, illust_id: u64, restrict: Restrict) -> ApiResult<ApiNone> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::POST, "/v2/illust/bookmark/add")
                     .query(&[("illust_id", illust_id)])
@@ -749,8 +728,7 @@ pub mod api {
             }
             pub fn bookmark_delete(&self, illust_id: u64) -> ApiResult<ApiNone> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::POST, "/v2/illust/bookmark/delete")
                     .query(&[("illust_id", illust_id)]);
@@ -761,8 +739,7 @@ pub mod api {
                 illust_id: u64,
             ) -> ApiResult<illust::illust::BookmarkTagsResponse> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v2/illust/bookmark/detail")
                     .query(&[("illust_id", illust_id)]);
@@ -770,20 +747,19 @@ pub mod api {
             }
             pub fn related(&self, illust_id: u64) -> ApiResult<response::Illusts> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v2/illust/related")
                     .query(&[("illust_id", illust_id)]);
                 let mut ret: ApiResult<response::Illusts> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
             pub fn ranking(&self, mode: RankingMode, date: Option<String>) -> ApiResult<response::Illusts> {
-                let mut req = self.client.as_ref().unwrap()
+                let mut req = self.client.read().unwrap().as_ref().unwrap()
                     .request(Method::GET, "/v1/illust/ranking")
                     .query(&[("mode", mode.to_string())]);
                 if let Some(date) = date {
@@ -792,7 +768,7 @@ pub mod api {
                 let mut ret: ApiResult<response::Illusts> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -801,15 +777,14 @@ pub mod api {
                 include_ranking_illusts: bool,
             ) -> ApiResult<illust::illust::Recommended> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/illust/recommended")
                     .query(&[("include_ranking_illusts", include_ranking_illusts)]);
                 let mut ret: ApiResult<illust::illust::Recommended> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -819,8 +794,7 @@ pub mod api {
                 include_total_comments: bool,
             ) -> ApiResult<illust::comments::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/illust/comments")
                     .query(&[("illust_id", illust_id)])
@@ -828,37 +802,35 @@ pub mod api {
                 let mut ret: ApiResult<illust::comments::Detail> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
 
             pub fn comments_v2(&self, illust_id: u64) -> ApiResult<illust::comments::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v2/illust/comments")
                     .query(&[("illust_id", illust_id)]);
                 let mut ret: ApiResult<illust::comments::Detail> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
 
             pub fn comment_replies(&self, comment_id: u64) -> ApiResult<illust::comments::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/illust/comment/replies")
                     .query(&[("comment_id", comment_id)]);
                 let mut ret: ApiResult<illust::comments::Detail> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -867,23 +839,21 @@ pub mod api {
                 include_ranking_label: bool,
             ) -> ApiResult<illust::illust::Recommended> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/manga/recommended")
                     .query(&[("include_ranking_label", include_ranking_label)]);
                 let mut ret: ApiResult<illust::illust::Recommended> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
 
             pub fn ugoira_metadata(&self, illust_id: &str) -> ApiResult<illust::ugoira::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/ugoira/metadata")
                     .query(&[("illust_id", illust_id)]);
@@ -893,7 +863,7 @@ pub mod api {
     }
     pub mod api_novel {
 
-        use std::sync::Arc;
+        use std::sync::{Arc, RwLock};
 
         use reqwest::Method;
 
@@ -903,27 +873,25 @@ pub mod api {
 
         #[derive(Clone, Default, Debug)]
         pub struct NovelApi {
-            pub client: Option<Arc<Client>>,
+            pub(crate) client: Arc<RwLock<Option<Arc<Client>>>>,
         }
         impl NovelApi {
             pub fn detail(&self, novel_id: u64) -> ApiResult<novel::novel::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v2/novel/detail")
                     .query(&[("novel_id", novel_id)]);
                 let mut ret: ApiResult<novel::novel::Detail> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
             pub fn bookmark_add(&self, novel_id: u64, restrict: Restrict) -> ApiResult<ApiNone> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::POST, "/v2/novel/bookmark/add")
                     .query(&[("novel_id", novel_id)])
@@ -932,8 +900,7 @@ pub mod api {
             }
             pub fn bookmark_delete(&self, novel_id: u64) -> ApiResult<ApiNone> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::POST, "/v2/novel/bookmark/delete")
                     .query(&[("novel_id", novel_id)]);
@@ -944,8 +911,7 @@ pub mod api {
                 illust_id: u64,
             ) -> ApiResult<illust::illust::BookmarkTagsResponse> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v2/illust/bookmark/detail")
                     .query(&[("illust_id", illust_id)]);
@@ -953,8 +919,7 @@ pub mod api {
             }
             pub fn text(&self, novel_id: u64) -> ApiResult<novel::novel::Text> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/novel/text")
                     .query(&[("novel_id", novel_id)]);
@@ -962,8 +927,7 @@ pub mod api {
             }
             pub fn ranking(&self, mode: RankingMode, date: Option<String>) -> ApiResult<novel::novel::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/novel/ranking")
                     .query(&[("mode", mode.to_string())]);
@@ -973,7 +937,7 @@ pub mod api {
                 let mut ret: ApiResult<novel::novel::Detail> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -982,15 +946,14 @@ pub mod api {
                 include_ranking_novels: bool,
             ) -> ApiResult<novel::novel::Recommended> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/novel/recommended")
                     .query(&[("include_ranking_novels", include_ranking_novels)]);
                 let mut ret: ApiResult<novel::novel::Recommended> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -1000,8 +963,7 @@ pub mod api {
                 include_total_comments: bool,
             ) -> ApiResult<novel::novel::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/novel/comments")
                     .query(&[("novel_id", novel_id)])
@@ -1009,51 +971,48 @@ pub mod api {
                 let mut ret: ApiResult<novel::novel::Detail> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
 
             pub fn comments_v2(&self, novel_id: u64) -> ApiResult<novel::comments::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v2/novel/comments")
                     .query(&[("novel_id", novel_id)]);
                 let mut ret: ApiResult<novel::comments::Detail> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
 
             pub fn comment_replies(&self, comment_id: u64) -> ApiResult<novel::comments::Detail> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/novel/comment/replies")
                     .query(&[("comment_id", comment_id)]);
                 let mut ret: ApiResult<novel::comments::Detail> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
             pub fn series(&self, series_id: u64) -> ApiResult<novel::series::SeriesNovelResponse> {
                 let mut req = self
-                    .client
-                    .as_ref()
+                    .client.read().unwrap()                    .as_ref()
                     .unwrap()
                     .request(Method::GET, "/v1/novel/series")
                     .query(&[("series_id", series_id)]);
                 let mut ret: ApiResult<novel::series::SeriesNovelResponse> = Client::response(req);
                 ret.map(|v| {
                     let mut v = v;
-                    v.client = self.client.clone();
+                    v.client = self.client.read().unwrap().clone();
                     v
                 })
             }
@@ -1061,14 +1020,15 @@ pub mod api {
     }
 
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug)]
     pub struct Client {
-        access_token: String,
+        access_token: Arc<Mutex<String>>,
         expires_in: u64,
         token_type: String,
         scope: String,
         refresh_token: String,
         userinfo: User,
+        proxy: Option<Proxy>,
         pub client: Arc<reqwest::blocking::Client>,
         default_headers: HeaderMap,
         pub search: SearchApi,
@@ -1076,49 +1036,61 @@ pub mod api {
         pub novel: NovelApi,
         pub illust: IllustApi,
     }
-    impl From<Response> for Client {
-        fn from(value: Response) -> Self {
+    impl Response {
+        pub fn build_client(self) -> Arc<Client> {
             let mut default_headers = HeaderMap::new();
             default_headers.insert(REFERER, "https://www.pixiv.net".parse().unwrap());
             default_headers.insert(USER_AGENT, "pixivdownloader/".parse().unwrap());
             let mut client_builder =
-                reqwest::blocking::ClientBuilder::new().default_headers(default_headers.clone());
-            if let Some(proxy) = value.proxy() {
+                reqwest::blocking::ClientBuilder::new().timeout(Duration::from_secs(10)).default_headers(default_headers.clone());
+            if let Some(proxy) = self.proxy() {
                 client_builder =
                     client_builder.proxy(Proxy::all("http://localhost:15777").unwrap());
             }
-            let mut sf = Self {
+            let mut sf_arc = Arc::new(Client {
                 client: Arc::new(client_builder.build().unwrap()),
                 default_headers: default_headers,
-                access_token: value.access_token().to_string(),
-                token_type: value.token_type().to_string(),
-                expires_in: value.expires_in(),
-                scope: value.scope().to_string(),
-                refresh_token: value.refresh_token().to_string(),
-                userinfo: value.user().clone(),
+                access_token: Arc::new(Mutex::new(self.access_token().to_string())),
+                token_type: self.token_type().to_string(),
+                expires_in: self.expires_in(),
+                scope: self.scope().to_string(),
+                refresh_token: self.refresh_token().to_string(),
+                userinfo: self.user().clone(),
+                proxy: self.proxy(),
                 search: SearchApi::default(),
                 user: UserApi::default(),
                 novel: NovelApi::default(),
                 illust: IllustApi::default(),
-            };
-            let sf_rc = Arc::new(sf.clone());
-            sf.search.client = Some(sf_rc.clone());
-            sf.user.client = Some(sf_rc.clone());
-            sf.novel.client = Some(sf_rc.clone());
-            sf.illust.client = Some(sf_rc.clone());
-            sf
+            });
+            *sf_arc.search.client.write().unwrap() = Some(sf_arc.clone());
+            *sf_arc.user.client.write().unwrap() = Some(sf_arc.clone());
+            *sf_arc.novel.client.write().unwrap() = Some(sf_arc.clone());
+            *sf_arc.illust.client.write().unwrap() = Some(sf_arc.clone());
+            sf_arc
         }
     }
     impl Client {
-        fn access_token(&self) -> &str {
-            &self.access_token
+        pub fn access_token(&self) -> String {
+            self.access_token.lock().unwrap().clone()
         }
         fn expires_in(&self) -> u64 {
             self.expires_in
         }
+        pub fn relogin(&self) -> bool {
+            let mut builder = ClientBudiler::new();
+            if let Some(v) = self.proxy.clone() {
+                builder.proxy(v);
+            }
+            builder.refresh_token(self.refresh_token());
+            if let Ok(res) = builder.build() {
+                *self.access_token.lock().unwrap() = res.access_token().to_string();
+                true
+            } else {
+                false
+            }
+        }
         pub(crate) fn request<'a>(&self, method: Method, path: &'a str) -> RequestBuilder {
-            self.client
-                .request(method, BASE_URL.join(path).unwrap())
+            self.client.request(method, BASE_URL.join(path).unwrap())
                 .bearer_auth(self.access_token())
         }
         pub(crate) fn no_auth_request<'a>(&self, method: Method, path: &'a str) -> RequestBuilder {
@@ -1130,7 +1102,7 @@ pub mod api {
         fn scope(&self) -> &str {
             &self.scope
         }
-        fn refresh_token(&self) -> &str {
+        pub fn refresh_token(&self) -> &str {
             &self.refresh_token
         }
         pub fn userinfo(&self) -> &User {
@@ -1139,10 +1111,13 @@ pub mod api {
         pub(crate) fn ensure_success_response(request: RequestBuilder) -> Result<reqwest::blocking::Response, reqwest::Error> {
             match request.try_clone().unwrap().send() {
                 Ok(res) => {
+                    Ok(res)
+                    /*
                     match res.status() {
-                        StatusCode::OK | StatusCode::FORBIDDEN => Ok(res),
+                        StatusCode::OK | StatusCode::FORBIDDEN | StatusCode:: => Ok(res),
                         code => panic!("UnexceptedStatuCode({}) for {}\n{:#?}", code, res.url(), res.headers()),
                     }
+                    */
                 }
                 Err(err) => {
                     if err.is_connect() | err.is_timeout() | err.is_request() {

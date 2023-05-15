@@ -20,8 +20,20 @@ mod tests {
     use crate::{user::user, illust::{comments, self, illust::Illust}, novel, error, client::{auth, api::{Client}}};
     use crate::preload::*;
 
-
     #[test]
+    fn relogin_test() {
+        let token = "OOVwt1_ZrLTjlzKWmirNmbK_WuwOookfSGYTZnDRLcI";
+        let mut h = auth::ClientBudiler::new();
+        h.refresh_token(token).proxy(Proxy::all("http://localhost:15777").unwrap());
+        let client = h.build().unwrap();
+        let client_one = client.clone();
+        println!("{} {}", client.access_token(), client_one.access_token());
+        client.relogin();
+        println!("{} {}", client.access_token(), client_one.access_token());
+        client_one.relogin();
+        println!("{} {}", client.access_token(), client_one.access_token());
+    }
+
     fn api_test() {
         let token = "OOVwt1_ZrLTjlzKWmirNmbK_WuwOookfSGYTZnDRLcI";
         let mut h = auth::ClientBudiler::new();
