@@ -163,18 +163,12 @@ pub mod auth {
                 client_builder = client_builder.proxy(proxy.clone());
             }
             let client = client_builder.build().unwrap();
-            let res = api::Client::ensure_success_response(client
+            let mut request = client
                 .post("https://oauth.secure.pixiv.net/auth/token")
-                .form(&formbody)).map_err(|e| {
-                    panic!("{e:#?}")
-                }).unwrap();
-            if !res.status().is_success() {
-                panic!("Auth error {:#?}", res.headers());
-            }
+                .form(&formbody);
 
-            let res: Value = res.json().map_err(|e| {
-                    panic!("{e:#?}")
-                }).unwrap();
+            let res = api::Client::ensure_json_response(request).unwrap();
+
             if res.get("has_error").is_none() {
                 let mut response: Response =
                     serde_json::from_value(res["response"].clone()).unwrap();
@@ -1128,12 +1122,36 @@ pub mod api {
                 }
             }
         }
+        pub(crate) fn ensure_json_response(request: RequestBuilder) -> Result<Value, reqwest::Error> {
+            let request_clone = request.try_clone().unwrap();
+            let res_json: Value = match Self::ensure_success_response(request) {
+                Ok(res) => match res.json() {
+                    Ok(json_res) => {json_res},
+                    Err(err) => {
+                        if err.is_connect() | err.is_timeout() | err.is_request() {
+                            Self::ensure_json_response(request_clone)?
+                        } else {
+                            return Err(err);
+                        }
+                    }
+                },
+                Err(err) => panic!("UnexceptedRequestError: {:#?}", err),
+            };
+            //println!("{:#?}", res_json);
+            Ok(serde_json::from_value(res_json).unwrap())
+        }
         pub(crate) fn response<T>(request: RequestBuilder) -> ApiResult<T>
         where
             T: for<'de> Deserialize<'de>,
         {
+            let request_clone = request.try_clone().unwrap();
             let res_json: Value = match Self::ensure_success_response(request) {
-                Ok(res) => res.json().unwrap(),
+                Ok(res) => match res.json() {
+                    Ok(json_res) => {json_res},
+                    Err(err) => {
+                        return Self::response(request_clone);
+                    }
+                },
                 Err(err) => panic!("UnexceptedRequestError: {:#?}", err),
             };
             //println!("{:#?}", res_json);
