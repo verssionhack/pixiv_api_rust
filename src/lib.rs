@@ -22,7 +22,7 @@ mod tests {
 
     #[test]
     fn relogin_test() {
-        let token = "OOVwt1_ZrLTjlzKWmirNmbK_WuwOookfSGYTZnDRLcI";
+        let token = "";
         let mut h = auth::ClientBudiler::new();
         h.refresh_token(token).proxy(Proxy::all("http://localhost:15777").unwrap());
         let client = h.build().unwrap();
@@ -35,7 +35,7 @@ mod tests {
     }
 
     fn api_test() {
-        let token = "OOVwt1_ZrLTjlzKWmirNmbK_WuwOookfSGYTZnDRLcI";
+        let token = "";
         let mut h = auth::ClientBudiler::new();
         h.refresh_token(token).proxy(Proxy::all("http://localhost:15777").unwrap());
         let client = h.build().unwrap();
